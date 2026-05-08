@@ -1,99 +1,49 @@
-<?php
-// Web Keuangan Sederhana - Warkop Tjahaja Abadi
-// Simpan file ini sebagai index.php
-// Database MySQL:
-// CREATE DATABASE keuangan_warkop;
-// USE keuangan_warkop;
-// CREATE TABLE transaksi (
-//   id INT AUTO_INCREMENT PRIMARY KEY,
-//   tanggal DATE NOT NULL,
-//   jenis ENUM('Pemasukan','Pengeluaran') NOT NULL,
-//   keterangan VARCHAR(255) NOT NULL,
-//   nominal DECIMAL(10,2) NOT NULL
-// );
+import streamlit as st
+import pandas as pd
+import os
 
-$conn = new mysqli('localhost', 'root', '', 'keuangan_warkop');
-if ($conn->connect_error) {
-    die('Koneksi gagal: ' . $conn->connect_error);
-}
+FILE_NAME = "data_keuangan.csv"
 
-// Tambah transaksi
-if (isset($_POST['simpan'])) {
-    $tanggal = $_POST['tanggal'];
-    $jenis = $_POST['jenis'];
-    $keterangan = $_POST['keterangan'];
-    $nominal = $_POST['nominal'];
+st.title("Sistem Keuangan Warkop Tjahaja Abadi")
 
-    $sql = "INSERT INTO transaksi (tanggal, jenis, keterangan, nominal)
-            VALUES ('$tanggal', '$jenis', '$keterangan', '$nominal')";
-    $conn->query($sql);
-    header('Location: index.php');
-}
+# Load data
+if os.path.exists(FILE_NAME):
+    df = pd.read_csv(FILE_NAME)
+else:
+    df = pd.DataFrame(columns=["Tanggal", "Jenis", "Keterangan", "Nominal"])
 
-// Ambil data transaksi
-$data = $conn->query('SELECT * FROM transaksi ORDER BY tanggal DESC');
+# Form input
+tanggal = st.date_input("Tanggal")
+jenis = st.selectbox("Jenis Transaksi", ["Pemasukan", "Pengeluaran"])
+keterangan = st.text_input("Keterangan")
+nominal = st.number_input("Nominal", min_value=0)
 
-// Hitung total pemasukan
-$pemasukan = $conn->query("SELECT SUM(nominal) as total FROM transaksi WHERE jenis='Pemasukan'")->fetch_assoc()['total'] ?? 0;
+# Tombol simpan
+if st.button("Simpan"):
+    data_baru = pd.DataFrame({
+        "Tanggal": [tanggal],
+        "Jenis": [jenis],
+        "Keterangan": [keterangan],
+        "Nominal": [nominal]
+    })
 
-// Hitung total pengeluaran
-$pengeluaran = $conn->query("SELECT SUM(nominal) as total FROM transaksi WHERE jenis='Pengeluaran'")->fetch_assoc()['total'] ?? 0;
+    df = pd.concat([df, data_baru], ignore_index=True)
+    df.to_csv(FILE_NAME, index=False)
 
-$saldo = $pemasukan - $pengeluaran;
-?>
+    st.success("Transaksi berhasil disimpan!")
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Sistem Keuangan Warkop</title>
-    <style>
-        body { font-family: Arial; margin: 30px; }
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        table, th, td { border: 1px solid black; padding: 8px; }
-        input, select { padding: 8px; margin: 5px; }
-        .box { padding: 10px; margin: 10px 0; border: 1px solid #ccc; }
-    </style>
-</head>
-<body>
+# Dashboard
+if not df.empty:
+    pemasukan = df[df["Jenis"] == "Pemasukan"]["Nominal"].sum()
+    pengeluaran = df[df["Jenis"] == "Pengeluaran"]["Nominal"].sum()
+    saldo = pemasukan - pengeluaran
 
-<h2>Web Keuangan Warkop Tjahaja Abadi</h2>
+    st.subheader("Dashboard")
+    st.write("Total Pemasukan: Rp", pemasukan)
+    st.write("Total Pengeluaran: Rp", pengeluaran)
+    st.write("Saldo Akhir: Rp", saldo)
 
-<div class="box">
-    <h3>Dashboard</h3>
-    <p>Total Pemasukan: Rp <?= number_format($pemasukan,0,',','.') ?></p>
-    <p>Total Pengeluaran: Rp <?= number_format($pengeluaran,0,',','.') ?></p>
-    <p>Saldo Akhir: Rp <?= number_format($saldo,0,',','.') ?></p>
-</div>
-
-<h3>Tambah Transaksi</h3>
-<form method="POST">
-    <input type="date" name="tanggal" required>
-    <select name="jenis" required>
-        <option value="Pemasukan">Pemasukan</option>
-        <option value="Pengeluaran">Pengeluaran</option>
-    </select>
-    <input type="text" name="keterangan" placeholder="Keterangan" required>
-    <input type="number" name="nominal" placeholder="Nominal" required>
-    <button type="submit" name="simpan">Simpan</button>
-</form>
-
-<h3>Riwayat Transaksi</h3>
-<table>
-    <tr>
-        <th>Tanggal</th>
-        <th>Jenis</th>
-        <th>Keterangan</th>
-        <th>Nominal</th>
-    </tr>
-    <?php while($row = $data->fetch_assoc()) { ?>
-    <tr>
-        <td><?= $row['tanggal'] ?></td>
-        <td><?= $row['jenis'] ?></td>
-        <td><?= $row['keterangan'] ?></td>
-        <td>Rp <?= number_format($row['nominal'],0,',','.') ?></td>
-    </tr>
-    <?php } ?>
-</table>
-
-</body>
-</html>
+    st.subheader("Riwayat Transaksi")
+    st.dataframe(df)
+else:
+    st.info("Belum ada data transaksi.")
