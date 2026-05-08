@@ -11,73 +11,96 @@ st.set_page_config(
 
 FILE_NAME = "laporan_keuangan.csv"
 
-# Styling modern
+# Styling premium
 st.markdown("""
 <style>
-/* Background utama */
+
+/* Background */
 .stApp {
-    background: #f5f5f5;
+    background: linear-gradient(180deg,#fff5f5,#ffeaea);
 }
 
 /* Sidebar */
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #b30000, #ff4500);
+    background: linear-gradient(180deg,#8b0000,#d62828);
+    padding-top: 20px;
 }
 
-/* Teks sidebar */
+/* Sidebar text */
 section[data-testid="stSidebar"] * {
     color: white !important;
 }
 
-/* Header box */
+/* Header */
 .header-box {
-    background: #b30000;
-    padding: 20px;
-    border-radius: 0px 0px 25px 25px;
-    margin-bottom: 20px;
+    background: linear-gradient(90deg,#8b0000,#d62828);
+    padding: 25px;
+    border-radius: 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
 }
 
-/* Card metric */
+/* Dashboard Card */
 [data-testid="stMetric"] {
     background: white;
     padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+    border-radius: 20px;
+    border-left: 8px solid #ff8c00;
+    box-shadow: 0px 5px 15px rgba(0,0,0,0.1);
 }
 
-/* Card menu */
+/* Menu Card */
 .menu-card {
     background: white;
-    padding: 20px;
-    border-radius: 15px;
-    margin-bottom: 15px;
-    box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+    padding: 25px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    border-left: 8px solid #d62828;
+    box-shadow: 0px 5px 15px rgba(0,0,0,0.08);
 }
 
-/* Tombol */
+/* Button */
 .stButton > button {
-    background: linear-gradient(90deg, #ff8c00, #ff4500);
+    width: 100%;
+    height: 50px;
+    background: linear-gradient(90deg,#ff8c00,#ff4500);
     color: white;
-    border-radius: 12px;
-    border: none;
-    padding: 10px 20px;
+    border-radius: 15px;
+    font-size: 18px;
     font-weight: bold;
+    border: none;
 }
 
 /* Input */
 .stTextInput input,
 .stNumberInput input,
 .stSelectbox div {
-    border-radius: 10px;
+    border-radius: 12px;
+    border: 2px solid #ff8c00;
 }
+
+/* Table */
+div[data-testid="stDataFrame"] {
+    background: white;
+    border-radius: 20px;
+    padding: 10px;
+}
+
+/* Alert */
+.stSuccess, .stError, .stInfo {
+    border-radius: 15px;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
 # Header
 st.markdown("""
 <div class="header-box">
-    <h1 style="color:white;">TJAHAJA ABADI</h1>
-    <p style="color:white;">Buku Kas Digital Warkop</p>
+    <h1 style="color:white;">🍜 TJAHAJA ABADI</h1>
+    <p style="color:white; font-size:18px;">
+    Buku Kas Digital • Self Order • Laporan Keuangan
+    </p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -90,9 +113,9 @@ else:
         "Pemasukan", "Bayar", "Kembalian", "Saldo"
     ])
 
-# Sidebar navigasi
+# Sidebar menu
 menu_halaman = st.sidebar.radio(
-    "Pilih Halaman",
+    "📌 Menu Navigasi",
     [
         "Dashboard",
         "Input Transaksi",
@@ -120,25 +143,29 @@ menu_list = {
     "Air Mineral": 5000
 }
 
-# Dashboard
+# DASHBOARD
 if menu_halaman == "Dashboard":
     st.title("📊 Dashboard Keuangan")
 
     if not df.empty:
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2 = st.columns(2)
+        col3, col4 = st.columns(2)
 
         col1.metric(
             "Total Pemasukan",
             f"Rp {df['Pemasukan'].sum():,.0f}"
         )
+
         col2.metric(
             "Total Uang Masuk",
             f"Rp {df['Bayar'].sum():,.0f}"
         )
+
         col3.metric(
             "Total Kembalian",
             f"Rp {df['Kembalian'].sum():,.0f}"
         )
+
         col4.metric(
             "Saldo Akhir",
             f"Rp {df['Saldo'].iloc[-1]:,.0f}"
@@ -146,7 +173,7 @@ if menu_halaman == "Dashboard":
     else:
         st.info("Belum ada transaksi")
 
-# Input transaksi
+# INPUT TRANSAKSI
 elif menu_halaman == "Input Transaksi":
     st.title("🧾 Input Transaksi")
 
@@ -162,8 +189,10 @@ elif menu_halaman == "Input Transaksi":
 
     st.markdown(f"""
     <div class="menu-card">
-        <h3>{menu}</h3>
-        <p><b>Harga:</b> Rp {harga:,.0f}</p>
+        <h2>{menu}</h2>
+        <h3 style="color:#d62828;">
+            Rp {harga:,.0f}
+        </h3>
     </div>
     """, unsafe_allow_html=True)
 
@@ -190,7 +219,7 @@ elif menu_halaman == "Input Transaksi":
         st.info("Masukkan uang bayar")
         kembalian = 0
 
-    if st.button("Simpan"):
+    if st.button("💾 Simpan Transaksi"):
         if selisih >= 0:
             saldo_terakhir = (
                 df["Saldo"].iloc[-1]
@@ -220,7 +249,7 @@ elif menu_halaman == "Input Transaksi":
         else:
             st.error("Uang bayar belum cukup")
 
-# Laporan harian
+# LAPORAN HARIAN
 elif menu_halaman == "Laporan Harian":
     st.title("📅 Laporan Harian")
 
@@ -235,15 +264,19 @@ elif menu_halaman == "Laporan Harian":
     if not laporan.empty:
         st.dataframe(laporan)
 
+        total_harian = laporan[
+            "Pemasukan"
+        ].sum()
+
         st.success(
-            f"Total pemasukan: Rp {laporan['Pemasukan'].sum():,.0f}"
+            f"Total pemasukan: Rp {total_harian:,.0f}"
         )
     else:
         st.info(
             "Belum ada transaksi di tanggal ini"
         )
 
-# Laporan bulanan
+# LAPORAN BULANAN
 elif menu_halaman == "Laporan Bulanan":
     st.title("📈 Laporan Bulanan")
 
@@ -252,9 +285,9 @@ elif menu_halaman == "Laporan Bulanan":
             df["Tanggal"]
         )
 
-        df["Bulan"] = df["Tanggal"].dt.strftime(
-            "%B %Y"
-        )
+        df["Bulan"] = df[
+            "Tanggal"
+        ].dt.strftime("%B %Y")
 
         laporan_bulanan = (
             df.groupby("Bulan")["Pemasukan"]
@@ -290,11 +323,10 @@ elif menu_halaman == "Laporan Bulanan":
         st.success(
             f"Total pemasukan bulan ini: Rp {total_bulan:,.0f}"
         )
-
     else:
         st.info("Belum ada data transaksi")
 
-# Buku kas
+# BUKU KAS
 elif menu_halaman == "Buku Kas":
     st.title("📒 Buku Kas Digital")
 
