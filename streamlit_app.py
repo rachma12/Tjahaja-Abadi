@@ -79,7 +79,7 @@ elif menu_halaman == "Input Transaksi":
 selisih = bayar - harga
 
     # Hitung kembalian otomatis
-    if bayar > 0:
+if bayar > 0:
         kembalian = bayar - harga
     else:
         kembalian = 0
@@ -90,9 +90,9 @@ selisih = bayar - harga
     elif selisih < 0:
         st.error(f"Uang kurang: Rp {abs(selisih):,.0f}")
     else:
-        st.success(f"Kembalian otomatis: Rp
+        st.success(f"Kembalian otomatis: Rp {selisih:,.0f}")
 
-    if st.button("Simpan") and bayar >= harga:
+    if st.button("Simpan") and selisih >= 0:
         saldo_terakhir = df["Saldo"].iloc[-1] if not df.empty else 0
         saldo_baru = saldo_terakhir + harga
 
