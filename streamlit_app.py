@@ -1,77 +1,120 @@
 import streamlit as st
 import pandas as pd
 import os
-from datetime import datetime
+
+st.set_page_config(page_title="Buku Kas Warkop", layout="wide")
 
 FILE_NAME = "laporan_keuangan.csv"
 
-st.title("Buku Kas Digital Warkop Tjahaja Abadi")
-st.markdown("### Buku kas harian untuk mencatat pemasukan seperti buku keuangan manual")
+# Styling warna merah
+st.markdown('''
+<style>
+.stApp {
+    background-color: #b30000;
+    color: white;
+}
+h1, h2, h3, p, label {
+    color: white !important;
+}
+</style>
+''', unsafe_allow_html=True)
 
 # Load data
 if os.path.exists(FILE_NAME):
     df = pd.read_csv(FILE_NAME)
 else:
-    df = pd.DataFrame(columns=[
-        "Tanggal", "Jam", "Keterangan", "Pemasukan", "Bayar", "Kembalian", "Saldo"
-    ])
+    df = pd.DataFrame(columns=["Tanggal","Jam","Keterangan","Pemasukan","Bayar","Kembalian","Saldo"])
 
-# Input transaksi
-st.subheader("Input Transaksi")
+# Sidebar navigasi (multi halaman)
+menu_halaman = st.sidebar.radio(
+    "Pilih Halaman",
+    ["Dashboard", "Input Transaksi", "Laporan Harian", "Buku Kas"]
+)
 
-tanggal = st.date_input("Tanggal")
-jam = st.time_input("Jam")
-menu = st.text_input("Keterangan Transaksi")
-harga = st.number_input("Harga", min_value=0)
-bayar = st.number_input("Uang Dibayar", min_value=0)
+# Menu makanan
+menu_list = {
+    "Mie Dok Dok":17000,
+    "Mie Habib":17000,
+    "Mie Bangladesh":20000,
+    "Mie Carbonara":20000,
+    "Mie Ramen":18000,
+    "Kentang Goreng":10000,
+    "Mix Platter":15000,
+    "Dimsum Tjahyadi":15000,
+    "Nasi Dadar Cryspi":13000,
+    "Magelangan":20000,
+    "Roti Bakar Susu":10000,
+    "Kopi Susu Tjahyadi":20000,
+    "Teh Manis":7000,
+    "Air Mineral":5000
+}
 
-kembalian = bayar - harga if bayar >= harga else 0
+# HALAMAN DASHBOARD
+if menu_halaman == "Dashboard":
+    st.title("Dashboard Keuangan Warkop Tjahaja Abadi")
+    if not df.empty:
+        total_pemasukan = df["Pemasukan"].sum()
+        total_bayar = df["Bayar"].sum()
+        total_kembalian = df["Kembalian"].sum()
+        saldo_akhir = df["Saldo"].iloc[-1]
 
-st.write("Kembalian:", kembalian)
+        st.metric("Total Pemasukan", f"Rp {total_pemasukan:,.0f}")
+        st.metric("Total Uang Masuk", f"Rp {total_bayar:,.0f}")
+        st.metric("Total Kembalian", f"Rp {total_kembalian:,.0f}")
+        st.metric("Saldo Akhir", f"Rp {saldo_akhir:,.0f}")
+    else:
+        st.info("Belum ada transaksi")
 
-if st.button("Simpan Transaksi"):
-    saldo_terakhir = df["Saldo"].iloc[-1] if not df.empty else 0
-    saldo_baru = saldo_terakhir + harga
+# HALAMAN INPUT TRANSAKSI
+elif menu_halaman == "Input Transaksi":
+    st.title("Input Transaksi")
 
-    data_baru = pd.DataFrame({
-        "Tanggal": [tanggal],
-        "Jam": [jam],
-        "Keterangan": [menu],
-        "Pemasukan": [harga],
-        "Bayar": [bayar],
-        "Kembalian": [kembalian],
-        "Saldo": [saldo_baru]
-    })
+    tanggal = st.date_input("Tanggal")
+    jam = st.time_input("Jam")
+    menu = st.selectbox("Pilih Menu", list(menu_list.keys()))
+    harga = menu_list[menu]
+    bayar = st.number_input("Uang Dibayar", min_value=0)
 
-    df = pd.concat([df, data_baru], ignore_index=True)
-    df.to_csv(FILE_NAME, index=False)
-    st.success("Transaksi berhasil disimpan")
+    kembalian = bayar - harga if bayar >= harga else 0
 
-# Kalender laporan
-st.subheader("Laporan Berdasarkan Tanggal")
+    st.write("Harga:", harga)
+    st.write("Kembalian:", kembalian)
 
-if not df.empty:
-    pilih_tanggal = st.date_input("Pilih tanggal laporan")
+    if st.button("Simpan"):
+        saldo_terakhir = df["Saldo"].iloc[-1] if not df.empty else 0
+        saldo_baru = saldo_terakhir + harga
 
-    laporan_harian = df[df["Tanggal"] == str(pilih_tanggal)]
+        data_baru = pd.DataFrame({
+            "Tanggal": [tanggal],
+            "Jam": [jam],
+            "Keterangan": [menu],
+            "Pemasukan": [harga],
+            "Bayar": [bayar],
+            "Kembalian": [kembalian],
+            "Saldo": [saldo_baru]
+        })
 
-    if not laporan_harian.empty:
-        total_pemasukan = laporan_harian["Pemasukan"].sum()
-        total_bayar = laporan_harian["Bayar"].sum()
-        total_kembalian = laporan_harian["Kembalian"].sum()
+        df = pd.concat([df, data_baru], ignore_index=True)
+        df.to_csv(FILE_NAME, index=False)
+        st.success("Transaksi berhasil disimpan")
 
-        st.write("Total Pemasukan:", total_pemasukan)
-        st.write("Total Uang Masuk:", total_bayar)
-        st.write("Total Kembalian:", total_kembalian)
+# HALAMAN LAPORAN HARIAN
+elif menu_halaman == "Laporan Harian":
+    st.title("Laporan Harian")
+    pilih_tanggal = st.date_input("Pilih Tanggal")
 
-        st.dataframe(laporan_harian)
+    laporan = df[df["Tanggal"] == str(pilih_tanggal)]
+
+    if not laporan.empty:
+        st.dataframe(laporan)
+        st.write("Total pemasukan:", laporan["Pemasukan"].sum())
     else:
         st.info("Belum ada transaksi di tanggal ini")
 
-# Riwayat lengkap
-st.subheader("Buku Kas (Riwayat Transaksi)")
-st.markdown("Format dibuat seperti buku kas: tanggal, jam, keterangan, pemasukan, uang bayar, kembalian, dan saldo berjalan.")
-if not df.empty:
-    st.dataframe(df)
-else:
-    st.info("Belum ada data transaksi")
+# HALAMAN BUKU KAS
+elif menu_halaman == "Buku Kas":
+    st.title("Buku Kas Digital")
+    if not df.empty:
+        st.dataframe(df)
+    else:
+        st.info("Belum ada data")
