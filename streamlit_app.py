@@ -10,28 +10,23 @@ FILE_NAME = "laporan_keuangan.csv"
 # Styling tema merah + sidebar oranye
 st.markdown("""
 <style>
-/* Background utama */
 .stApp {
     background-color: #b30000;
     color: white;
 }
 
-/* Sidebar oranye */
 section[data-testid="stSidebar"] {
     background-color: #ff8c00;
 }
 
-/* Semua teks */
 h1, h2, h3, p, label, div {
     color: white !important;
 }
 
-/* Sidebar teks putih */
 section[data-testid="stSidebar"] * {
     color: white !important;
 }
 
-/* Tombol */
 .stButton > button {
     background-color: #ff8c00;
     color: white;
@@ -40,7 +35,6 @@ section[data-testid="stSidebar"] * {
     padding: 10px;
 }
 
-/* Input box */
 .stTextInput input,
 .stNumberInput input,
 .stSelectbox div {
@@ -61,7 +55,13 @@ else:
 # Sidebar navigasi
 menu_halaman = st.sidebar.radio(
     "Pilih Halaman",
-    ["Dashboard", "Input Transaksi", "Laporan Harian", "Buku Kas"]
+    [
+        "Dashboard",
+        "Input Transaksi",
+        "Laporan Harian",
+        "Laporan Bulanan",
+        "Buku Kas"
+    ]
 )
 
 # Data menu
@@ -110,7 +110,6 @@ elif menu_halaman == "Input Transaksi":
     harga = menu_list[menu]
     bayar = st.number_input("Uang Dibayar", min_value=0, step=1000)
 
-    # Kalkulator otomatis
     selisih = bayar - harga
 
     if bayar > 0:
@@ -127,7 +126,6 @@ elif menu_halaman == "Input Transaksi":
     else:
         st.success(f"Kembalian otomatis: Rp {kembalian:,.0f}")
 
-    # Simpan transaksi
     if st.button("Simpan"):
         if selisih >= 0:
             saldo_terakhir = df["Saldo"].iloc[-1] if not df.empty else 0
@@ -162,6 +160,35 @@ elif menu_halaman == "Laporan Harian":
         st.write(f"Total pemasukan: Rp {laporan['Pemasukan'].sum():,.0f}")
     else:
         st.info("Belum ada transaksi di tanggal ini")
+
+# Laporan bulanan
+elif menu_halaman == "Laporan Bulanan":
+    st.title("Laporan Bulanan")
+
+    if not df.empty:
+        df["Tanggal"] = pd.to_datetime(df["Tanggal"])
+        df["Bulan"] = df["Tanggal"].dt.strftime("%B %Y")
+
+        laporan_bulanan = df.groupby("Bulan")["Pemasukan"].sum().reset_index()
+
+        st.subheader("Rekap Pemasukan per Bulan")
+        st.dataframe(laporan_bulanan)
+
+        pilih_bulan = st.selectbox(
+            "Pilih Bulan",
+            laporan_bulanan["Bulan"].unique()
+        )
+
+        detail_bulan = df[df["Bulan"] == pilih_bulan]
+
+        st.subheader(f"Detail Transaksi {pilih_bulan}")
+        st.dataframe(detail_bulan)
+
+        total_bulan = detail_bulan["Pemasukan"].sum()
+        st.success(f"Total pemasukan bulan ini: Rp {total_bulan:,.0f}")
+
+    else:
+        st.info("Belum ada data transaksi")
 
 # Buku kas
 elif menu_halaman == "Buku Kas":
