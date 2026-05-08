@@ -3,44 +3,82 @@ import pandas as pd
 import os
 
 # Konfigurasi halaman
-st.set_page_config(page_title="Buku Kas Warkop", layout="wide")
+st.set_page_config(
+    page_title="Buku Kas Warkop",
+    layout="wide",
+    page_icon="🍜"
+)
 
 FILE_NAME = "laporan_keuangan.csv"
 
-# Styling tema merah + sidebar oranye
+# Styling modern
 st.markdown("""
 <style>
+/* Background utama */
 .stApp {
-    background-color: #b30000;
-    color: white;
+    background: #f5f5f5;
 }
 
+/* Sidebar */
 section[data-testid="stSidebar"] {
-    background-color: #ff8c00;
+    background: linear-gradient(180deg, #b30000, #ff4500);
 }
 
-h1, h2, h3, p, label, div {
-    color: white !important;
-}
-
+/* Teks sidebar */
 section[data-testid="stSidebar"] * {
     color: white !important;
 }
 
-.stButton > button {
-    background-color: #ff8c00;
-    color: white;
-    border-radius: 10px;
-    border: none;
-    padding: 10px;
+/* Header box */
+.header-box {
+    background: #b30000;
+    padding: 20px;
+    border-radius: 0px 0px 25px 25px;
+    margin-bottom: 20px;
 }
 
+/* Card metric */
+[data-testid="stMetric"] {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+}
+
+/* Card menu */
+.menu-card {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+}
+
+/* Tombol */
+.stButton > button {
+    background: linear-gradient(90deg, #ff8c00, #ff4500);
+    color: white;
+    border-radius: 12px;
+    border: none;
+    padding: 10px 20px;
+    font-weight: bold;
+}
+
+/* Input */
 .stTextInput input,
 .stNumberInput input,
 .stSelectbox div {
     border-radius: 10px;
 }
 </style>
+""", unsafe_allow_html=True)
+
+# Header
+st.markdown("""
+<div class="header-box">
+    <h1 style="color:white;">TJAHAJA ABADI</h1>
+    <p style="color:white;">Buku Kas Digital Warkop</p>
+</div>
 """, unsafe_allow_html=True)
 
 # Load data
@@ -84,51 +122,81 @@ menu_list = {
 
 # Dashboard
 if menu_halaman == "Dashboard":
-    st.title("Dashboard Keuangan Warkop Tjahaja Abadi")
+    st.title("📊 Dashboard Keuangan")
 
     if not df.empty:
-        total_pemasukan = df["Pemasukan"].sum()
-        total_bayar = df["Bayar"].sum()
-        total_kembalian = df["Kembalian"].sum()
-        saldo_akhir = df["Saldo"].iloc[-1]
+        col1, col2, col3, col4 = st.columns(4)
 
-        st.metric("Total Pemasukan", f"Rp {total_pemasukan:,.0f}")
-        st.metric("Total Uang Masuk", f"Rp {total_bayar:,.0f}")
-        st.metric("Total Kembalian", f"Rp {total_kembalian:,.0f}")
-        st.metric("Saldo Akhir", f"Rp {saldo_akhir:,.0f}")
+        col1.metric(
+            "Total Pemasukan",
+            f"Rp {df['Pemasukan'].sum():,.0f}"
+        )
+        col2.metric(
+            "Total Uang Masuk",
+            f"Rp {df['Bayar'].sum():,.0f}"
+        )
+        col3.metric(
+            "Total Kembalian",
+            f"Rp {df['Kembalian'].sum():,.0f}"
+        )
+        col4.metric(
+            "Saldo Akhir",
+            f"Rp {df['Saldo'].iloc[-1]:,.0f}"
+        )
     else:
         st.info("Belum ada transaksi")
 
 # Input transaksi
 elif menu_halaman == "Input Transaksi":
-    st.title("Input Transaksi")
+    st.title("🧾 Input Transaksi")
 
     tanggal = st.date_input("Tanggal")
     jam = st.time_input("Jam")
-    menu = st.selectbox("Pilih Menu", list(menu_list.keys()))
+
+    menu = st.selectbox(
+        "Pilih Menu",
+        list(menu_list.keys())
+    )
 
     harga = menu_list[menu]
-    bayar = st.number_input("Uang Dibayar", min_value=0, step=1000)
+
+    st.markdown(f"""
+    <div class="menu-card">
+        <h3>{menu}</h3>
+        <p><b>Harga:</b> Rp {harga:,.0f}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    bayar = st.number_input(
+        "Uang Dibayar",
+        min_value=0,
+        step=1000
+    )
 
     selisih = bayar - harga
 
     if bayar > 0:
-        kembalian = selisih
+        if selisih < 0:
+            st.error(
+                f"Uang kurang: Rp {abs(selisih):,.0f}"
+            )
+            kembalian = 0
+        else:
+            st.success(
+                f"Kembalian otomatis: Rp {selisih:,.0f}"
+            )
+            kembalian = selisih
     else:
-        kembalian = 0
-
-    st.write(f"Harga: Rp {harga:,.0f}")
-
-    if bayar == 0:
         st.info("Masukkan uang bayar")
-    elif selisih < 0:
-        st.error(f"Uang kurang: Rp {abs(selisih):,.0f}")
-    else:
-        st.success(f"Kembalian otomatis: Rp {kembalian:,.0f}")
+        kembalian = 0
 
     if st.button("Simpan"):
         if selisih >= 0:
-            saldo_terakhir = df["Saldo"].iloc[-1] if not df.empty else 0
+            saldo_terakhir = (
+                df["Saldo"].iloc[-1]
+                if not df.empty else 0
+            )
+
             saldo_baru = saldo_terakhir + harga
 
             data_baru = pd.DataFrame({
@@ -141,7 +209,11 @@ elif menu_halaman == "Input Transaksi":
                 "Saldo": [saldo_baru]
             })
 
-            df = pd.concat([df, data_baru], ignore_index=True)
+            df = pd.concat(
+                [df, data_baru],
+                ignore_index=True
+            )
+
             df.to_csv(FILE_NAME, index=False)
 
             st.success("Transaksi berhasil disimpan")
@@ -150,28 +222,50 @@ elif menu_halaman == "Input Transaksi":
 
 # Laporan harian
 elif menu_halaman == "Laporan Harian":
-    st.title("Laporan Harian")
+    st.title("📅 Laporan Harian")
 
-    pilih_tanggal = st.date_input("Pilih Tanggal")
-    laporan = df[df["Tanggal"] == str(pilih_tanggal)]
+    pilih_tanggal = st.date_input(
+        "Pilih Tanggal"
+    )
+
+    laporan = df[
+        df["Tanggal"] == str(pilih_tanggal)
+    ]
 
     if not laporan.empty:
         st.dataframe(laporan)
-        st.write(f"Total pemasukan: Rp {laporan['Pemasukan'].sum():,.0f}")
+
+        st.success(
+            f"Total pemasukan: Rp {laporan['Pemasukan'].sum():,.0f}"
+        )
     else:
-        st.info("Belum ada transaksi di tanggal ini")
+        st.info(
+            "Belum ada transaksi di tanggal ini"
+        )
 
 # Laporan bulanan
 elif menu_halaman == "Laporan Bulanan":
-    st.title("Laporan Bulanan")
+    st.title("📈 Laporan Bulanan")
 
     if not df.empty:
-        df["Tanggal"] = pd.to_datetime(df["Tanggal"])
-        df["Bulan"] = df["Tanggal"].dt.strftime("%B %Y")
+        df["Tanggal"] = pd.to_datetime(
+            df["Tanggal"]
+        )
 
-        laporan_bulanan = df.groupby("Bulan")["Pemasukan"].sum().reset_index()
+        df["Bulan"] = df["Tanggal"].dt.strftime(
+            "%B %Y"
+        )
 
-        st.subheader("Rekap Pemasukan per Bulan")
+        laporan_bulanan = (
+            df.groupby("Bulan")["Pemasukan"]
+            .sum()
+            .reset_index()
+        )
+
+        st.subheader(
+            "Rekap Pemasukan per Bulan"
+        )
+
         st.dataframe(laporan_bulanan)
 
         pilih_bulan = st.selectbox(
@@ -179,20 +273,30 @@ elif menu_halaman == "Laporan Bulanan":
             laporan_bulanan["Bulan"].unique()
         )
 
-        detail_bulan = df[df["Bulan"] == pilih_bulan]
+        detail_bulan = df[
+            df["Bulan"] == pilih_bulan
+        ]
 
-        st.subheader(f"Detail Transaksi {pilih_bulan}")
+        st.subheader(
+            f"Detail Transaksi {pilih_bulan}"
+        )
+
         st.dataframe(detail_bulan)
 
-        total_bulan = detail_bulan["Pemasukan"].sum()
-        st.success(f"Total pemasukan bulan ini: Rp {total_bulan:,.0f}")
+        total_bulan = detail_bulan[
+            "Pemasukan"
+        ].sum()
+
+        st.success(
+            f"Total pemasukan bulan ini: Rp {total_bulan:,.0f}"
+        )
 
     else:
         st.info("Belum ada data transaksi")
 
 # Buku kas
 elif menu_halaman == "Buku Kas":
-    st.title("Buku Kas Digital")
+    st.title("📒 Buku Kas Digital")
 
     if not df.empty:
         st.dataframe(df)
