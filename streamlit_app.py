@@ -73,14 +73,26 @@ elif menu_halaman == "Input Transaksi":
     jam = st.time_input("Jam")
     menu = st.selectbox("Pilih Menu", list(menu_list.keys()))
     harga = menu_list[menu]
-    bayar = st.number_input("Uang Dibayar", min_value=0)
+    bayar = st.number_input("Uang Dibayar", min_value=0, step=1000)
 
-    kembalian = bayar - harga if bayar >= harga else 0
+# Kalkulator otomatis (real-time)
+selisih = bayar - harga
+
+    # Hitung kembalian otomatis
+    if bayar > 0:
+        kembalian = bayar - harga
+    else:
+        kembalian = 0
 
     st.write("Harga:", harga)
-    st.write("Kembalian:", kembalian)
+    if bayar == 0:
+        st.info("Masukkan uang bayar untuk menghitung otomatis")
+    elif selisih < 0:
+        st.error(f"Uang kurang: Rp {abs(selisih):,.0f}")
+    else:
+        st.success(f"Kembalian otomatis: Rp
 
-    if st.button("Simpan"):
+    if st.button("Simpan") and bayar >= harga:
         saldo_terakhir = df["Saldo"].iloc[-1] if not df.empty else 0
         saldo_baru = saldo_terakhir + harga
 
