@@ -2,7 +2,74 @@ import streamlit as st
 import pandas as pd
 import os
 
-# Konfigurasi halaman
+# =========================
+# LOGIN SYSTEM
+# =========================
+PASSWORD = "cahyadi_sejahtera"
+
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+# Halaman login
+if not st.session_state.authenticated:
+    st.set_page_config(
+        page_title="Login Buku Kas",
+        layout="centered",
+        page_icon="🔐"
+    )
+
+    st.markdown("""
+    <style>
+    .stApp {
+        background: linear-gradient(180deg,#8b0000,#d62828);
+    }
+
+    .login-box {
+        background: white;
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0px 8px 20px rgba(0,0,0,0.2);
+        margin-top: 100px;
+    }
+
+    .stButton > button {
+        width: 100%;
+        height: 50px;
+        background: linear-gradient(90deg,#ff8c00,#ff4500);
+        color: white;
+        border-radius: 12px;
+        border: none;
+        font-size: 18px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="login-box">
+        <h1 style="text-align:center;">🔐 Login Buku Kas</h1>
+        <p style="text-align:center;">
+        Masukkan kode akses untuk membuka laporan keuangan
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    password_input = st.text_input(
+        "Kode Akses",
+        type="password"
+    )
+
+    if st.button("Masuk"):
+        if password_input == PASSWORD:
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("Kode akses salah")
+
+    st.stop()
+
+# =========================
+# MAIN APP
+# =========================
 st.set_page_config(
     page_title="Buku Kas Warkop",
     layout="wide",
@@ -90,7 +157,6 @@ div[data-testid="stDataFrame"] {
 .stSuccess, .stError, .stInfo {
     border-radius: 15px;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -125,6 +191,11 @@ menu_halaman = st.sidebar.radio(
     ]
 )
 
+# Logout button
+if st.sidebar.button("🚪 Logout"):
+    st.session_state.authenticated = False
+    st.rerun()
+
 # Data menu
 menu_list = {
     "Mie Dok Dok": 17000,
@@ -151,25 +222,10 @@ if menu_halaman == "Dashboard":
         col1, col2 = st.columns(2)
         col3, col4 = st.columns(2)
 
-        col1.metric(
-            "Total Pemasukan",
-            f"Rp {df['Pemasukan'].sum():,.0f}"
-        )
-
-        col2.metric(
-            "Total Uang Masuk",
-            f"Rp {df['Bayar'].sum():,.0f}"
-        )
-
-        col3.metric(
-            "Total Kembalian",
-            f"Rp {df['Kembalian'].sum():,.0f}"
-        )
-
-        col4.metric(
-            "Saldo Akhir",
-            f"Rp {df['Saldo'].iloc[-1]:,.0f}"
-        )
+        col1.metric("Total Pemasukan", f"Rp {df['Pemasukan'].sum():,.0f}")
+        col2.metric("Total Uang Masuk", f"Rp {df['Bayar'].sum():,.0f}")
+        col3.metric("Total Kembalian", f"Rp {df['Kembalian'].sum():,.0f}")
+        col4.metric("Saldo Akhir", f"Rp {df['Saldo'].iloc[-1]:,.0f}")
     else:
         st.info("Belum ada transaksi")
 
@@ -206,14 +262,10 @@ elif menu_halaman == "Input Transaksi":
 
     if bayar > 0:
         if selisih < 0:
-            st.error(
-                f"Uang kurang: Rp {abs(selisih):,.0f}"
-            )
+            st.error(f"Uang kurang: Rp {abs(selisih):,.0f}")
             kembalian = 0
         else:
-            st.success(
-                f"Kembalian otomatis: Rp {selisih:,.0f}"
-            )
+            st.success(f"Kembalian otomatis: Rp {selisih:,.0f}")
             kembalian = selisih
     else:
         st.info("Masukkan uang bayar")
@@ -221,11 +273,7 @@ elif menu_halaman == "Input Transaksi":
 
     if st.button("💾 Simpan Transaksi"):
         if selisih >= 0:
-            saldo_terakhir = (
-                df["Saldo"].iloc[-1]
-                if not df.empty else 0
-            )
-
+            saldo_terakhir = df["Saldo"].iloc[-1] if not df.empty else 0
             saldo_baru = saldo_terakhir + harga
 
             data_baru = pd.DataFrame({
@@ -253,50 +301,32 @@ elif menu_halaman == "Input Transaksi":
 elif menu_halaman == "Laporan Harian":
     st.title("📅 Laporan Harian")
 
-    pilih_tanggal = st.date_input(
-        "Pilih Tanggal"
-    )
+    pilih_tanggal = st.date_input("Pilih Tanggal")
 
-    laporan = df[
-        df["Tanggal"] == str(pilih_tanggal)
-    ]
+    laporan = df[df["Tanggal"] == str(pilih_tanggal)]
 
     if not laporan.empty:
         st.dataframe(laporan)
-
-        total_harian = laporan[
-            "Pemasukan"
-        ].sum()
+        total_harian = laporan["Pemasukan"].sum()
 
         st.success(
             f"Total pemasukan: Rp {total_harian:,.0f}"
         )
     else:
-        st.info(
-            "Belum ada transaksi di tanggal ini"
-        )
+        st.info("Belum ada transaksi di tanggal ini")
 
 # LAPORAN BULANAN
 elif menu_halaman == "Laporan Bulanan":
     st.title("📈 Laporan Bulanan")
 
     if not df.empty:
-        df["Tanggal"] = pd.to_datetime(
-            df["Tanggal"]
-        )
-
-        df["Bulan"] = df[
-            "Tanggal"
-        ].dt.strftime("%B %Y")
+        df["Tanggal"] = pd.to_datetime(df["Tanggal"])
+        df["Bulan"] = df["Tanggal"].dt.strftime("%B %Y")
 
         laporan_bulanan = (
             df.groupby("Bulan")["Pemasukan"]
             .sum()
             .reset_index()
-        )
-
-        st.subheader(
-            "Rekap Pemasukan per Bulan"
         )
 
         st.dataframe(laporan_bulanan)
@@ -306,19 +336,11 @@ elif menu_halaman == "Laporan Bulanan":
             laporan_bulanan["Bulan"].unique()
         )
 
-        detail_bulan = df[
-            df["Bulan"] == pilih_bulan
-        ]
-
-        st.subheader(
-            f"Detail Transaksi {pilih_bulan}"
-        )
+        detail_bulan = df[df["Bulan"] == pilih_bulan]
 
         st.dataframe(detail_bulan)
 
-        total_bulan = detail_bulan[
-            "Pemasukan"
-        ].sum()
+        total_bulan = detail_bulan["Pemasukan"].sum()
 
         st.success(
             f"Total pemasukan bulan ini: Rp {total_bulan:,.0f}"
