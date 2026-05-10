@@ -10,13 +10,15 @@ PASSWORD = "cahyadi_sejahtera"
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
+# Konfigurasi halaman (sekali saja)
+st.set_page_config(
+    page_title="Buku Kas Warkop",
+    layout="wide",
+    page_icon="🍜"
+)
+
 # Halaman login
 if not st.session_state.authenticated:
-    st.set_page_config(
-        page_title="Login Buku Kas",
-        layout="centered",
-        page_icon="🔐"
-    )
 
     st.markdown("""
     <style>
@@ -40,6 +42,7 @@ if not st.session_state.authenticated:
         border-radius: 12px;
         border: none;
         font-size: 18px;
+        font-weight: bold;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -70,12 +73,6 @@ if not st.session_state.authenticated:
 # =========================
 # MAIN APP
 # =========================
-st.set_page_config(
-    page_title="Buku Kas Warkop",
-    layout="wide",
-    page_icon="🍜"
-)
-
 FILE_NAME = "laporan_keuangan.csv"
 
 # Styling premium
@@ -138,12 +135,33 @@ section[data-testid="stSidebar"] * {
     border: none;
 }
 
-/* Input */
+/* Input biasa */
 .stTextInput input,
-.stNumberInput input,
-.stSelectbox div {
-    border-radius: 12px;
-    border: 2px solid #ff8c00;
+.stNumberInput input {
+    border-radius: 12px !important;
+    border: 2px solid #ff8c00 !important;
+    padding: 10px !important;
+}
+
+/* Selectbox rapi */
+div[data-baseweb="select"] {
+    border: 2px solid #ff8c00 !important;
+    border-radius: 12px !important;
+    background-color: white !important;
+    padding: 2px !important;
+}
+
+/* Isi selectbox */
+div[data-baseweb="select"] > div {
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Label */
+label {
+    font-weight: bold !important;
+    color: #8b0000 !important;
+    margin-bottom: 8px !important;
 }
 
 /* Table */
@@ -157,6 +175,7 @@ div[data-testid="stDataFrame"] {
 .stSuccess, .stError, .stInfo {
     border-radius: 15px;
 }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -191,7 +210,7 @@ menu_halaman = st.sidebar.radio(
     ]
 )
 
-# Logout button
+# Logout
 if st.sidebar.button("🚪 Logout"):
     st.session_state.authenticated = False
     st.rerun()
@@ -237,8 +256,9 @@ elif menu_halaman == "Input Transaksi":
     jam = st.time_input("Jam")
 
     menu = st.selectbox(
-        "Pilih Menu",
-        list(menu_list.keys())
+        "🍜 Pilih Menu",
+        list(menu_list.keys()),
+        help="Pilih menu yang dipesan"
     )
 
     harga = menu_list[menu]
@@ -286,11 +306,7 @@ elif menu_halaman == "Input Transaksi":
                 "Saldo": [saldo_baru]
             })
 
-            df = pd.concat(
-                [df, data_baru],
-                ignore_index=True
-            )
-
+            df = pd.concat([df, data_baru], ignore_index=True)
             df.to_csv(FILE_NAME, index=False)
 
             st.success("Transaksi berhasil disimpan")
@@ -302,16 +318,12 @@ elif menu_halaman == "Laporan Harian":
     st.title("📅 Laporan Harian")
 
     pilih_tanggal = st.date_input("Pilih Tanggal")
-
     laporan = df[df["Tanggal"] == str(pilih_tanggal)]
 
     if not laporan.empty:
         st.dataframe(laporan)
         total_harian = laporan["Pemasukan"].sum()
-
-        st.success(
-            f"Total pemasukan: Rp {total_harian:,.0f}"
-        )
+        st.success(f"Total pemasukan: Rp {total_harian:,.0f}")
     else:
         st.info("Belum ada transaksi di tanggal ini")
 
@@ -329,6 +341,7 @@ elif menu_halaman == "Laporan Bulanan":
             .reset_index()
         )
 
+        st.subheader("Rekap Bulanan")
         st.dataframe(laporan_bulanan)
 
         pilih_bulan = st.selectbox(
@@ -337,11 +350,9 @@ elif menu_halaman == "Laporan Bulanan":
         )
 
         detail_bulan = df[df["Bulan"] == pilih_bulan]
-
         st.dataframe(detail_bulan)
 
         total_bulan = detail_bulan["Pemasukan"].sum()
-
         st.success(
             f"Total pemasukan bulan ini: Rp {total_bulan:,.0f}"
         )
